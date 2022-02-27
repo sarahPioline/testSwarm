@@ -37,14 +37,16 @@ services:
       - back
     # Enables the web UI and tells Traefik to listen to docker
     command: 
-      - "--api.insecure=true"
+      #- "--api.insecure=false"
       - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.shrecksecure.address=:443"
       - "--provider.docker.swarmMode=true"
       - "--provider.docker.exposedbydefault=false"
-
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      - "--entrypoints.web.http.redirections.entrypoint.to=shrecksecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
       #- "--entrypoints.traefik.address=:8080"
       # - --debug=false
       # - --logLevel=ERROR
@@ -84,7 +86,7 @@ services:
           # Activer traefik pour qu'il applique ces règles sur son propre conteneur
         - traefik.enable=true
         - traefik.docker.network=web
-          #- traefik.http.routers.traefik-dash.tls=true
+        - traefik.http.routers.traefik-dash.tls=true
         - traefik.http.services.traefik-dash.loadbalancer.server.port=8080
         - traefik.http.routers.traefik-dash.entrypoints=web,shrecksecure
         - traefik.http.routers.traefik-dash.rule=PathPrefix('/dashboard/')
