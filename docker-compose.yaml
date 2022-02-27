@@ -84,7 +84,7 @@ services:
         - traefik.http.services.traefik-dash.loadbalancer.server.port=8080
         - traefik.http.routers.traefik-dash.entrypoints=web,shrecksecure
         - traefik.http.routers.traefik-dash.service=api@internal
-        - traefik.http.routers.traefik-dash.rule=Host(`quentivas.net`)
+        #- traefik.http.routers.traefik-dash.rule=Host(`quentivas.net`)
           # Redirection http to https
           #- traefik.http.routers.traefik-dash.middlewares=redirect-to-https
           # Middleware d'authentification
