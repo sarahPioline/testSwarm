@@ -90,7 +90,7 @@ services:
         - traefik.http.routers.traefik-dash.rule=PathPrefix('/dashboard/')
         - traefik.http.routers.traefik-dash.service=api@internal
           # Redirection http to https
-          #- traefik.http.routers.traefik-dash.middlewares=redirect-to-https
+        - traefik.http.routers.traefik-dash.middlewares=redirect-to-https
           # Middleware d'authentification
           #- traefik.http.routers.traefik-dash.middlewares=basic-auth
           #MIDDLEWARES
