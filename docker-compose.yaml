@@ -41,8 +41,8 @@ services:
       - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--entrypoints.web.address=:80"
-      - "--entrypoints.websecure.address=:443"
-      - "--entrypoints.traefik.address=:8080"
+      - "--entrypoints.shrecksecure.address=:443"
+      #- "--entrypoints.traefik.address=:8080"
       # - --debug=false
       # - --logLevel=ERROR
       # - --defaultentrypoints=https,http
@@ -83,7 +83,7 @@ services:
         - traefik.docker.network=web
           #- traefik.http.routers.traefik-dash.tls=true
         - traefik.http.services.traefik-dash.loadbalancer.server.port=8080
-        - traefik.http.routers.traefik-dash.entrypoints=toto,totoSecure
+        - traefik.http.routers.traefik-dash.entrypoints=web,shrecksecure
         - traefik.http.routers.traefik-dash.service=api@internal
          # - traefik.http.routers.traefik-dash.rule=Host(`quentivas.net`)
           # Redirection http to https
