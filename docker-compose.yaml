@@ -35,6 +35,7 @@ services:
     # Enables the web UI and tells Traefik to listen to docker
     command: 
       - "--api.insecure=true"
+      - "--api.dashboard=true"
       - "--providers.docker=true"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.websecure.address=:443"
