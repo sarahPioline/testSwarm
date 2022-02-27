@@ -1,0 +1,89 @@
+
+version: '3'
+
+services:
+  db:
+    image: mysql:5.7
+    volumes:
+      - db_data:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: somewordpress
+      MYSQL_DATABASE: wordpress
+      MYSQL_USER: wordpress
+      MYSQL_PASSWORD: wordpress
+
+  wordpress:
+    depends_on:
+      - db
+    image: wordpress:latest
+    restart: always
+    # ports:
+    #   - "8000:8000"
+    environment:
+      WORDPRESS_DB_HOST: db:3306
+      WORDPRESS_DB_USER: wordpress
+      WORDPRESS_DB_PASSWORD: wordpress
+    labels:
+    - "traefik.http.routers.wordpress.rule=Host(`wordpress.home.localhost`)"
+    - "traefik.http.routers.wordpress.entrypoints=websecure"
+    - "traefik.http.routers.wordpress.tls=true"
+
+  reverse-proxy:
+    # The official v2 Traefik docker image
+    image: traefik:v2.5
+    # Enables the web UI and tells Traefik to listen to docker
+    command: 
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--entrypoints.web.address=:80"
+      - "--entrypoints.websecure.address=:443"
+      - "--entrypoints.traefik.address=:8080"
+      # - --debug=false
+      # - --logLevel=ERROR
+      # - --defaultentrypoints=https,http
+      # - --entryPoints=Name:http Address::80 Redirect.EntryPoint:https
+      # - --entryPoints=Name:https Address::443 TLS
+      # - --retry
+      # - --docker.endpoint=unix:///var/run/docker.sock
+      # - --docker.domain=my-awesome-app.org
+      # - --docker.watch=true
+      # - --docker.exposedbydefault=false
+      # - --acme.email=your-email-here@my-awesome-app.org
+      # - --acme.storage=acme.json
+      # - --acme.entryPoint=https
+      # - --acme.onHostRule=true
+      # - --acme.httpchallenge.entrypoint=http
+    ports:
+      # The HTTP port
+      - "80:80"
+      # HTTPS
+      - "443:443"
+      # The Web UI (enabled by --api.insecure=true)
+      # - "8080:8080"
+    volumes:
+      # So that Traefik can listen to the Docker events
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "traefik.http.routers.api.rule=Host(`traefik.home.localhost`)"
+      - "traefik.http.routers.api.service=api@internal"
+      - "traefik.http.routers.api.entrypoints=websecure"
+      - "traefik.http.routers.api.middlewares=auth"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
+      - "traefik.http.routers.api-http.middlewares=https-redirect@docker"
+      - "traefik.http.routers.api-https.entrypoints=secure"
+      - "traefik.http.routers.api-https.rule=Host(`traefik.home.localhost`)"
+      - "traefik.http.routers.api-https.tls=true"
+      - "traefik.http.routers.api-https.tls.certresolver=letsencrypt"
+volumes:
+    db_data:
+
+  
+#   whoami:
+#     # A container that exposes an API to show its IP address
+#     image: traefik/whoami
+#     labels:
+#       - "traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)"
+#       - "traefik.http.routers.whoami.entrypoints=websecure"
+#       - "traefik.http.routers.whoami.tls=true"
