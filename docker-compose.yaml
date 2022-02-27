@@ -95,7 +95,7 @@ services:
           #- traefik.http.middlewares.basic-auth.basicauth.users=admin:$$apr1$$nN1cqEn0$$/.R9RmImw2ovsp6X1Gavf.,user:$$apr1$$pvwSLi7k$$5DHFUg2SrTkVfeN5LZjpW/
 volumes:
     db_data:
-network: 
+networks: 
      web:
         driver: overlay 
      back: 
