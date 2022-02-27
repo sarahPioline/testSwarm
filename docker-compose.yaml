@@ -85,7 +85,7 @@ services:
         - traefik.http.services.traefik-dash.loadbalancer.server.port=8080
         - traefik.http.routers.traefik-dash.entrypoints=web,shrecksecure
         - traefik.http.routers.traefik-dash.service=api@internal
-        - traefik.http.routers.traefik-dash.rule=PathPrefix(`/dashboard`)
+        - traefik.http.routers.traefik-dash.rule=PathPrefix('/dashboard')
           # Redirection http to https
           #- traefik.http.routers.traefik-dash.middlewares=redirect-to-https
           # Middleware d'authentification
@@ -96,6 +96,7 @@ services:
           #- traefik.http.routers.redirs.rule=hostregexp(`{host:.+}`)
           #- traefik.http.routers.redirs.entrypoints=toto,totoSecure
           #- traefik.http.middlewares.basic-auth.basicauth.users=admin:$$apr1$$nN1cqEn0$$/.R9RmImw2ovsp6X1Gavf.,user:$$apr1$$pvwSLi7k$$5DHFUg2SrTkVfeN5LZjpW/
+
 volumes:
     db_data:
 networks: 
