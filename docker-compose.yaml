@@ -65,20 +65,50 @@ services:
     volumes:
       # So that Traefik can listen to the Docker events
       - /var/run/docker.sock:/var/run/docker.sock
-    labels:
-      - "traefik.http.routers.api.rule=Host(`traefik.home.localhost`)"
-      - "traefik.http.routers.api.service=api@internal"
-      - "traefik.http.routers.api.entrypoints=websecure"
-      - "traefik.http.routers.api.middlewares=auth"
-      - "traefik.http.middlewares.https-redirect.redirectscheme.scheme=https"
-      - "traefik.http.middlewares.https-redirect.redirectscheme.permanent=true"
-      - "traefik.http.routers.api-http.middlewares=https-redirect@docker"
-      - "traefik.http.routers.api-https.entrypoints=secure"
-      - "traefik.http.routers.api-https.rule=Host(`traefik.home.localhost`)"
-      - "traefik.http.routers.api-https.tls=true"
-      - "traefik.http.routers.api-https.tls.certresolver=letsencrypt"
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+      placement:
+        constraints:
+          - node.role==manager
+        labels:
+          ## Important : mettre la déclaration des labels dans la stack de déploiment
+
+          # Activer traefik pour qu'il applique ces règles sur son propre conteneur
+          - traefik.enable=true
+          - traefik.docker.network=web
+          # Activation SSL pour protocol https sur le router du dashboard
+          - traefik.http.routers.traefik-dash.tls=true
+          # Loadbalancer nécessaire pour le swarm (voir doc traefik)
+          - traefik.http.services.traefik-dash.loadbalancer.server.port=8080
+          - traefik.http.routers.traefik-dash.entrypoints=toto,totoSecure
+          - traefik.http.routers.traefik-dash.service=api@internal
+          #### Regle d'accés par DNS
+          - traefik.http.routers.traefik-dash.rule=Host(`quentivas.net`)
+          ######## Middlewares ########
+          # Redirection http to https
+          - traefik.http.routers.traefik-dash.middlewares=redirect-to-https
+          # Middleware d'authentification
+          - traefik.http.routers.traefik-dash.middlewares=basic-auth
+          ######## DEFINITION DES MIDDLEWARES ########
+          - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+          - traefik.http.routers.redirs.middlewares=redirect-to-https
+          - traefik.http.routers.redirs.rule=hostregexp(`{host:.+}`)
+          - traefik.http.routers.redirs.entrypoints=toto,totoSecure
+          # Devrait etre dans une ressource secrete
+          - traefik.http.middlewares.basic-auth.basicauth.users=admin:$$apr1$$nN1cqEn0$$/.R9RmImw2ovsp6X1Gavf.,user:$$apr1$$pvwSLi7k$$5DHFUg2SrTkVfeN5LZjpW/
 volumes:
     db_data:
+network: 
+     web:
+        driver: overlay 
+     back: 
+        internal: true
+     
+     
+     
+     
 
   
 #   whoami:
@@ -88,3 +118,4 @@ volumes:
 #       - "traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)"
 #       - "traefik.http.routers.whoami.entrypoints=websecure"
 #       - "traefik.http.routers.whoami.tls=true"
+    
