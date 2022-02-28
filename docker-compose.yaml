@@ -1,117 +1,91 @@
 version: '3'
 
 services:
-  db:
-    image: mysql:5.7
-    volumes:
-      - db_data:/var/lib/mysql
-    restart: always
-    environment:
-      MYSQL_ROOT_PASSWORD: somewordpress
-      MYSQL_DATABASE: wordpress
-      MYSQL_USER: wordpress
-      MYSQL_PASSWORD: wordpress
-
-  wordpress:
-    depends_on:
-      - db
-    image: wordpress:latest
-    restart: always
-    # ports:
-    #   - "8000:8000"
-    environment:
-      WORDPRESS_DB_HOST: db
-      WORDPRESS_DB_USER: wordpress
-      WORDPRESS_DB_PASSWORD: wordpress
-    labels:
-    - "traefik.http.routers.wordpress.rule=Host(`wordpress.home.localhost`)"
-    - "traefik.http.routers.wordpress.entrypoints=websecure"
-    - "traefik.http.routers.wordpress.tls=true"
-
-  reverse-proxy:
-    # The official v2 Traefik docker image
-    image: traefik:v2.5
-    networks: 
-      - web
-      - back
-    # Enables the web UI and tells Traefik to listen to docker
-    command: 
-      - "--api.insecure=true"
+  traefik:
+    image: traefik:v2.6
+    command:
+      # - --api.insecure=true
       - "--api.dashboard=true"
       - "--providers.docker=true"
+      - "--providers.docker.swarmMode=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.endpoint=unix:///var/run/docker.sock"
       - "--entrypoints.web.address=:80"
       - "--entrypoints.shrecksecure.address=:443"
-      #- "--entrypoints.traefik.address=:8080"
-      # - --debug=false
-      # - --logLevel=ERROR
-      # - --defaultentrypoints=https,http
-      # - --entryPoints=Name:http Address::80 Redirect.EntryPoint:https
-      # - --entryPoints=Name:https Address::443 TLS
-      # - --retry
-      # - --docker.endpoint=unix:///var/run/docker.sock
-      # - --docker.domain=my-awesome-app.org
-      # - --docker.watch=true
-      # - --docker.exposedbydefault=false
-      # - --acme.email=your-email-here@my-awesome-app.org
-      # - --acme.storage=acme.json
-      # - --acme.entryPoint=https
-      # - --acme.onHostRule=true
-      # - --acme.httpchallenge.entrypoint=http
+      - "--entrypoints.web.http.redirections.entrypoint.permanent=true"
+      - "--entrypoints.web.http.redirections.entrypoint.to=shrecksecure"
+      - "--entrypoints.web.http.redirections.entryPoint.scheme=https"
     ports:
-      # The HTTP port
       - "80:80"
-      # HTTPS
       - "443:443"
-      # The Web UI (enabled by --api.insecure=true)
       - "8080:8080"
     volumes:
-      # So that Traefik can listen to the Docker events
-      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - web
+      - back
     deploy:
       replicas: 1
       restart_policy:
         condition: on-failure
+      labels:
+        - traefik.enable=true
+        - traefik.docker.network=web
+        - traefik.http.routers.traefik-dash.tls=true
+        - traefik.http.services.traefik-dash.loadbalancer.server.port=8080
+        - traefik.http.routers.traefik-dash.entrypoints=shrecksecure
+        - traefik.http.routers.traefik-dash.service=api@internal
+        - traefik.http.routers.traefik-dash.rule=Host(`traefik.uwu`)
+        - traefik.http.routers.traefik-dash.middlewares=basic-auth
+        - traefik.http.middlewares.basic-auth.basicauth.users=admin:$$apr1$$nN1cqEn0$$/.R9RmImw2ovsp6X1Gavf.,user:$$apr1$$pvwSLi7k$$5DHFUg2SrTkVfeN5LZjpW/
       placement:
         constraints:
           - node.role==manager
+  wordpress:
+    image: wordpress
+    networks:
+      - back
+      - database
+    environment:
+      WORDPRESS_DB_HOST: db
+      WORDPRESS_DB_USER: root  #très sécur <3
+      WORDPRESS_DB_PASSWORD: root #très sécur <3
+      WORDPRESS_DB_NAME: wordpress_swarm
+    volumes:
+      - wordpress:/var/www/html
+    deploy:
+      replicas: 5
       labels:
-          ## Important : mettre la déclaration des labels dans la stack de déploiment
-
-          # Activer traefik pour qu'il applique ces règles sur son propre conteneur
-        - traefik.enable=true
-        - traefik.docker.network=web
-          #- traefik.http.routers.traefik-dash.tls=true
-        - traefik.http.services.traefik-dash.loadbalancer.server.port=8080
-        - traefik.http.routers.traefik-dash.entrypoints=web,shrecksecure
-        - traefik.http.routers.traefik-dash.service=api@internal
-        - traefik.http.routers.traefik-dash.rule=PathPrefix(`/dashboard`)
-          # Redirection http to https
-          #- traefik.http.routers.traefik-dash.middlewares=redirect-to-https
-          # Middleware d'authentification
-          #- traefik.http.routers.traefik-dash.middlewares=basic-auth
-          #MIDDLEWARES
-          #- traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
-          #- traefik.http.routers.redirs.middlewares=redirect-to-https
-          #- traefik.http.routers.redirs.rule=hostregexp(`{host:.+}`)
-          #- traefik.http.routers.redirs.entrypoints=toto,totoSecure
-          #- traefik.http.middlewares.basic-auth.basicauth.users=admin:$$apr1$$nN1cqEn0$$/.R9RmImw2ovsp6X1Gavf.,user:$$apr1$$pvwSLi7k$$5DHFUg2SrTkVfeN5LZjpW/
+        - "traefik.enable=true"
+        - "traefik.http.routers.wordpress.entrypoints=shrecksecure"
+        - "traefik.http.routers.wordpress.rule=Host(`wordpress.uwu`)"
+        - "traefik.http.routers.wordpress.tls=true"
+        - "traefik.http.services.wordpress.loadbalancer.server.port=80"
+        - "traefik.http.services.wordpress.loadbalancer.sticky=true"
+        - "traefik.http.services.wordpress.loadbalancer.sticky.cookie.name=worpress_traefik_sticky"
+        - "traefik.http.services.wordpress.loadbalancer.sticky.cookie.httponly=true"
+  db:
+    image: mysql:5.7
+    environment:
+      MYSQL_DATABASE: wordpress_swarm
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ALLOW_EMPTY_PASSWORD: true
+    volumes:
+      - db:/var/lib/mysql
+    networks:
+      - database
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
 volumes:
-    db_data:
-networks: 
-     web:
-        driver: overlay 
-     back: 
-        internal: true
-     
-     
-     
-     
+  wordpress:
+  db:
 
-  
-#   whoami:
-#     # A container that exposes an API to show its IP address
-#     image: traefik/whoami
-#     labels:
-#       - "traefik.http.routers.whoami.rule=Host(`whoami.docker.localhost`)"
-#       - "traefik.http.routers.whoami.entrypoints=websecure"
-#       - "traefik.http.routers.whoami.tls=true"
+networks:
+  web:
+    driver: overlay
+  back:
+    internal: true
+  database:
+    internal: true
