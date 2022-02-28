@@ -25,6 +25,7 @@ Deployer la stack :
 ## Les liens :
 
 Traefik : https://traefik.uwu
+
 Wordpress : https://wordpress.uwu
 
 ps : Sur Linux, ils faut préciser l'adresse IP du worker dans le fichier de conf host sinon le DNS fonctionne pas et pas de '.uwu'.
