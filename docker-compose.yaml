@@ -37,7 +37,7 @@ services:
         - traefik.http.routers.traefik-dash.service=api@internal
         - traefik.http.routers.traefik-dash.rule=Host(`traefik.uwu`)
         - traefik.http.routers.traefik-dash.middlewares=basic-auth
-        - traefik.http.middlewares.basic-auth.basicauth.users=admin:$$apr1$$nN1cqEn0$$/.R9RmImw2ovsp6X1Gavf.,user:$$apr1$$pvwSLi7k$$5DHFUg2SrTkVfeN5LZjpW/
+        - traefik.http.middlewares.basic-auth.basicauth.users=admin:$$apr1$$nN1cqEn0$$/.R9RmImw2ovsp6X1Gavf.
       placement:
         constraints:
           - node.role==manager
